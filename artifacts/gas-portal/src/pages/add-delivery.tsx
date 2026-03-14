@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDate } from "@/lib/utils";
-import { CheckCircle2, UserCheck, UserPlus, Info } from "lucide-react";
+import { CheckCircle2, UserCheck, UserPlus, Paperclip } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { DeliveryFiles } from "@/components/DeliveryFiles";
 
 const formSchema = z.object({
   consumerNumber: z.string().min(1, "Consumer Number is required"),
@@ -45,6 +46,13 @@ export default function AddDeliveryPage() {
   );
 
   React.useEffect(() => {
+    // If the form's live consumer number is empty (e.g. just reset after submit),
+    // don't auto-fill even if debouncedConsumerNo hasn't cleared yet.
+    const liveConsumerNo = form.getValues("consumerNumber");
+    if (!liveConsumerNo) {
+      setIsExisting(false);
+      return;
+    }
     if (searchRes?.data?.length) {
       const match = searchRes.data.find(d => d.consumerNumber === debouncedConsumerNo);
       if (match) {
@@ -100,20 +108,31 @@ export default function AddDeliveryPage() {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-success/10 border-2 border-success/20 p-6 rounded-2xl flex gap-4 items-start"
+            className="bg-success/10 border-2 border-success/20 p-6 rounded-2xl space-y-5"
           >
-            <CheckCircle2 className="w-8 h-8 text-success shrink-0" />
-            <div>
-              <h3 className="font-bold text-success-foreground text-lg mb-1">Delivery Recorded Successfully</h3>
-              <p className="text-sm text-success-foreground/80 mb-3">
-                Consumer <strong>{successData.consumerNumber}</strong> ({successData.customerName}) has been updated.
-              </p>
-              <div className="bg-white/50 px-4 py-3 rounded-xl inline-block border border-success/10">
-                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Next Eligible Date</p>
-                <p className="font-display font-bold text-xl text-success">
-                  {formatDate(successData.nextEligibleDate)}
+            <div className="flex gap-4 items-start">
+              <CheckCircle2 className="w-8 h-8 text-success shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-bold text-success-foreground text-lg mb-1">Delivery Recorded Successfully</h3>
+                <p className="text-sm text-success-foreground/80 mb-3">
+                  Consumer <strong>{successData.consumerNumber}</strong> ({successData.customerName}) has been updated.
                 </p>
+                <div className="bg-white/50 px-4 py-3 rounded-xl inline-block border border-success/10">
+                  <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Next Eligible Date</p>
+                  <p className="font-display font-bold text-xl text-success">
+                    {formatDate(successData.nextEligibleDate)}
+                  </p>
+                </div>
               </div>
+            </div>
+
+            <div className="border-t border-success/20 pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Paperclip className="w-4 h-4 text-success-foreground/70" />
+                <span className="text-sm font-semibold text-success-foreground/80">Attach Files to This Delivery</span>
+                <span className="text-xs text-muted-foreground">(optional — images, PDFs, Word docs)</span>
+              </div>
+              <DeliveryFiles deliveryId={successData.id} canDelete={true} />
             </div>
           </motion.div>
         )}
