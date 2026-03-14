@@ -190,7 +190,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-display font-bold">Portal Settings</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">Portal Settings</h1>
         <p className="text-muted-foreground mt-1">Configure application parameters and manage user access.</p>
       </div>
 
@@ -227,11 +227,11 @@ export default function SettingsPage() {
               <label className="text-sm font-semibold text-foreground">
                 Waiting Period (Days)
               </label>
-              <div className="flex gap-4 items-center">
+              <div className="flex flex-wrap gap-3 items-center">
                 <Input
                   type="number"
                   {...form.register("waitingDays")}
-                  className="max-w-[200px] text-lg font-display"
+                  className="w-32 text-lg font-display"
                 />
                 <span className="text-muted-foreground text-sm">days between eligible gas deliveries</span>
               </div>

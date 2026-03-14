@@ -239,7 +239,7 @@ export default function SearchPage() {
   return (
     <div className="space-y-8 h-full flex flex-col">
       <div>
-        <h1 className="text-3xl font-display font-bold">Search Consumers</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold">Search Consumers</h1>
         <p className="text-muted-foreground mt-1">Look up delivery history and check eligibility status.</p>
       </div>
 
