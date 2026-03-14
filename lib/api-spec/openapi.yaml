@@ -15,6 +15,8 @@ tags:
     description: Gas delivery records
   - name: settings
     description: Portal settings
+  - name: storage
+    description: File upload and serving
 paths:
   /healthz:
     get:
@@ -217,6 +219,113 @@ paths:
               schema:
                 type: string
                 format: binary
+
+  /storage/uploads/request-url:
+    post:
+      tags: [storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+
+  /storage/objects/{objectPath}:
+    get:
+      tags: [storage]
+      operationId: getStorageObject
+      summary: Serve an uploaded file
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File content
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: binary
+
+  /deliveries/{id}/files:
+    get:
+      operationId: getDeliveryFiles
+      tags: [deliveries]
+      summary: Get files attached to a delivery
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeliveryFileRecord"
+    post:
+      operationId: attachDeliveryFile
+      tags: [deliveries]
+      summary: Attach an uploaded file to a delivery
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttachFileRequest"
+      responses:
+        "201":
+          description: File attached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryFileRecord"
+
+  /deliveries/{id}/files/{fileId}:
+    delete:
+      operationId: deleteDeliveryFile
+      tags: [deliveries]
+      summary: Remove a file from a delivery
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /users:
     get:
@@ -468,6 +577,73 @@ components:
           minimum: 1
       required:
         - waitingDays
+
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+
+    DeliveryFileRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        deliveryId:
+          type: integer
+        fileName:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+        objectPath:
+          type: string
+        uploadedBy:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - deliveryId
+        - fileName
+        - fileType
+        - fileSize
+        - objectPath
+        - uploadedBy
+        - createdAt
+
+    AttachFileRequest:
+      type: object
+      properties:
+        fileName:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+        objectPath:
+          type: string
+      required:
+        - fileName
+        - fileType
+        - fileSize
+        - objectPath
 
     UpdatePasswordRequest:
       type: object

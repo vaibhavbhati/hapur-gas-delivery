@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { Download, Trash2, Loader2 } from "lucide-react";
+import { DeliveryFilesToggle } from "@/components/DeliveryFiles";
 
 export default function AdminPage() {
   const queryClient = useQueryClient();
@@ -85,22 +86,26 @@ export default function AdminPage() {
                 <th className="px-6 py-4 font-semibold">Name</th>
                 <th className="px-6 py-4 font-semibold">Date</th>
                 <th className="px-6 py-4 font-semibold">Next Eligible</th>
+                <th className="px-6 py-4 font-semibold">Files</th>
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">Loading records...</td>
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">Loading records...</td>
                 </tr>
               )}
               {!isLoading && deliveries.map((delivery) => (
-                <tr key={delivery.id} className="bg-white border-b last:border-0 hover:bg-slate-50 transition-colors">
+                <tr key={delivery.id} className="bg-white border-b last:border-0 hover:bg-slate-50 transition-colors align-top">
                   <td className="px-6 py-4 text-muted-foreground">#{delivery.id}</td>
                   <td className="px-6 py-4 font-medium font-mono text-foreground">{delivery.consumerNumber}</td>
                   <td className="px-6 py-4">{delivery.customerName}</td>
                   <td className="px-6 py-4">{formatDate(delivery.deliveryDate)}</td>
                   <td className="px-6 py-4">{formatDate(delivery.nextEligibleDate)}</td>
+                  <td className="px-6 py-4">
+                    <DeliveryFilesToggle deliveryId={delivery.id} canDelete={true} />
+                  </td>
                   <td className="px-6 py-4 text-right">
                     <Button 
                       variant="ghost" 

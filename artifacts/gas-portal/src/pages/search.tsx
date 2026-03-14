@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatDate, isEligible } from "@/lib/utils";
 import { Search as SearchIcon, CheckCircle2, XCircle } from "lucide-react";
+import { DeliveryFilesToggle } from "@/components/DeliveryFiles";
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -48,12 +49,13 @@ export default function SearchPage() {
                 <th className="px-6 py-4 font-semibold">Last Delivery</th>
                 <th className="px-6 py-4 font-semibold">Next Eligible</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
+                <th className="px-6 py-4 font-semibold">Files</th>
               </tr>
             </thead>
             <tbody>
               {!isLoading && deliveries.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                       <SearchIcon className="w-12 h-12 mb-3 opacity-20" />
                       <p className="text-lg font-medium">No results found</p>
@@ -65,7 +67,7 @@ export default function SearchPage() {
               {deliveries.map((delivery) => {
                 const eligible = isEligible(delivery.nextEligibleDate);
                 return (
-                  <tr key={delivery.id} className="bg-white border-b last:border-0 hover:bg-slate-50 transition-colors">
+                  <tr key={delivery.id} className="bg-white border-b last:border-0 hover:bg-slate-50 transition-colors align-top">
                     <td className="px-6 py-4 font-medium font-mono text-foreground">{delivery.consumerNumber}</td>
                     <td className="px-6 py-4 font-medium">{delivery.customerName}</td>
                     <td className="px-6 py-4">{delivery.mobileNumber}</td>
@@ -83,6 +85,9 @@ export default function SearchPage() {
                           Not Eligible
                         </span>
                       )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <DeliveryFilesToggle deliveryId={delivery.id} canDelete={false} />
                     </td>
                   </tr>
                 );

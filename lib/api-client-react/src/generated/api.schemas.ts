@@ -87,6 +87,35 @@ export interface UpdateSettingsRequest {
   waitingDays: number;
 }
 
+export interface UploadUrlRequest {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
+export interface DeliveryFileRecord {
+  id: number;
+  deliveryId: number;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  objectPath: string;
+  uploadedBy: number;
+  createdAt: string;
+}
+
+export interface AttachFileRequest {
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  objectPath: string;
+}
+
 export interface UpdatePasswordRequest {
   /** @minLength 4 */
   password: string;

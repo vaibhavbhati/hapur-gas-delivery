@@ -155,6 +155,73 @@ export const DeleteDeliveryResponse = zod.object({
 });
 
 /**
+ * @summary Request a presigned URL for file upload
+ */
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string(),
+  size: zod.number(),
+  contentType: zod.string(),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string(),
+  objectPath: zod.string(),
+});
+
+/**
+ * @summary Serve an uploaded file
+ */
+export const GetStorageObjectParams = zod.object({
+  objectPath: zod.coerce.string(),
+});
+
+/**
+ * @summary Get files attached to a delivery
+ */
+export const GetDeliveryFilesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetDeliveryFilesResponseItem = zod.object({
+  id: zod.number(),
+  deliveryId: zod.number(),
+  fileName: zod.string(),
+  fileType: zod.string(),
+  fileSize: zod.number(),
+  objectPath: zod.string(),
+  uploadedBy: zod.number(),
+  createdAt: zod.date(),
+});
+export const GetDeliveryFilesResponse = zod.array(GetDeliveryFilesResponseItem);
+
+/**
+ * @summary Attach an uploaded file to a delivery
+ */
+export const AttachDeliveryFileParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AttachDeliveryFileBody = zod.object({
+  fileName: zod.string(),
+  fileType: zod.string(),
+  fileSize: zod.number(),
+  objectPath: zod.string(),
+});
+
+/**
+ * @summary Remove a file from a delivery
+ */
+export const DeleteDeliveryFileParams = zod.object({
+  id: zod.coerce.number(),
+  fileId: zod.coerce.number(),
+});
+
+export const DeleteDeliveryFileResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
  * @summary Get all users (admin only)
  */
 export const GetUsersResponseItem = zod.object({

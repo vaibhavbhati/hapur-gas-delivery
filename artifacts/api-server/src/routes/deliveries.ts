@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, deliveriesTable, settingsTable, usersTable } from "@workspace/db";
+import { db, deliveriesTable, settingsTable, usersTable, deliveryFilesTable } from "@workspace/db";
 import { eq, or, ilike, desc, sql } from "drizzle-orm";
 import ExcelJS from "exceljs";
 
@@ -228,6 +228,43 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   if (!existing[0]) return res.status(404).json({ error: "not_found", message: "Record not found" });
 
   await db.delete(deliveriesTable).where(eq(deliveriesTable.id, id));
+  return res.json({ success: true, message: "Deleted" });
+});
+
+router.get("/:id/files", requireAuth, async (req: Request, res: Response) => {
+  const deliveryId = parseInt(req.params.id);
+  const files = await db.select().from(deliveryFilesTable).where(eq(deliveryFilesTable.deliveryId, deliveryId)).orderBy(desc(deliveryFilesTable.createdAt));
+  return res.json(files);
+});
+
+router.post("/:id/files", requireAuth, async (req: Request, res: Response) => {
+  const deliveryId = parseInt(req.params.id);
+  const existing = await db.select().from(deliveriesTable).where(eq(deliveriesTable.id, deliveryId)).limit(1);
+  if (!existing[0]) return res.status(404).json({ error: "not_found", message: "Record not found" });
+
+  const { fileName, fileType, fileSize, objectPath } = req.body;
+  if (!fileName || !fileType || !fileSize || !objectPath) {
+    return res.status(400).json({ error: "bad_request", message: "fileName, fileType, fileSize and objectPath are required" });
+  }
+
+  const [file] = await db.insert(deliveryFilesTable).values({
+    deliveryId,
+    fileName,
+    fileType,
+    fileSize,
+    objectPath,
+    uploadedBy: req.session.userId!,
+  }).returning();
+
+  return res.status(201).json(file);
+});
+
+router.delete("/:id/files/:fileId", requireAuth, async (req: Request, res: Response) => {
+  const fileId = parseInt(req.params.fileId);
+  const existing = await db.select().from(deliveryFilesTable).where(eq(deliveryFilesTable.id, fileId)).limit(1);
+  if (!existing[0]) return res.status(404).json({ error: "not_found", message: "File not found" });
+
+  await db.delete(deliveryFilesTable).where(eq(deliveryFilesTable.id, fileId));
   return res.json({ success: true, message: "Deleted" });
 });
 

@@ -17,6 +17,7 @@ Gas Delivery Management Portal — a full-stack web app for recording and managi
 - **Build**: esbuild (CJS bundle)
 - **Frontend**: React + Vite, TanStack Query, Wouter, React Hook Form, Tailwind CSS, Framer Motion
 - **Excel export**: ExcelJS
+- **File uploads**: Replit Object Storage (GCS-backed) + Uppy v5 (presigned PUT uploads)
 - **Auth**: Session-based (express-session)
 
 ## Structure
@@ -30,7 +31,8 @@ artifacts-monorepo/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
+│   ├── db/                 # Drizzle ORM schema + DB connection
+│   └── object-storage-web/ # Uppy-based ObjectUploader component
 ├── scripts/
 └── package.json
 ```
@@ -46,18 +48,20 @@ artifacts-monorepo/
 - **Dashboard** — Summary stats (deliveries today, this month, recent records)
 - **Add Delivery** — Record a gas delivery (consumer number, name, date). Mobile number auto-populated from previous records for known consumer numbers.
 - **Search** — Search by consumer number, name, or mobile. Shows last delivery date, next eligible date, and color-coded eligibility status (green=eligible, red=not yet eligible)
-- **Admin Panel** (admin only) — View/delete all records, Export to Excel
+- **Admin Panel** (admin only) — View/delete all records, Export to Excel, attach/delete files per delivery
 - **Settings** (admin only) — Configure the waiting days between deliveries (default: 25 days)
 
 ### Business Logic
 - **Next Eligible Date** = Delivery Date + Waiting Days (configurable, default 25)
 - **Mobile number lookup**: If a consumer number already exists in the database, mobile number and name are auto-filled from the most recent delivery record
 - **Excel export**: Downloads all records as a formatted .xlsx file
+- **File attachments**: Each delivery can have image/PDF/Word files attached. Files uploaded via presigned GCS URLs (Uppy v5), served from `/api/storage/objects/*`. Admin can delete attachments; all users can view them from the Search page.
 
 ## Database Schema
 - `users` — Stores user accounts (id, username, password, name, role)
 - `deliveries` — Delivery records (consumer_number, customer_name, mobile_number, delivery_date, next_eligible_date, created_by)
 - `settings` — Portal configuration (waiting_days, default 25)
+- `delivery_files` — File attachments per delivery (delivery_id, file_name, file_type, file_size, object_path, uploaded_by)
 
 ## TypeScript & Composite Projects
 

@@ -17,8 +17,10 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AttachFileRequest,
   CreateDeliveryRequest,
   Delivery,
+  DeliveryFileRecord,
   DeliveryListResponse,
   ErrorResponse,
   GetDeliveriesParams,
@@ -30,6 +32,8 @@ import type {
   UpdateDeliveryRequest,
   UpdatePasswordRequest,
   UpdateSettingsRequest,
+  UploadUrlRequest,
+  UploadUrlResponse,
   User,
 } from "./api.schemas";
 
@@ -860,6 +864,440 @@ export function useExportDeliveries<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+export const getRequestUploadUrlUrl = () => {
+  return `/api/storage/uploads/request-url`;
+};
+
+export const requestUploadUrl = async (
+  uploadUrlRequest: UploadUrlRequest,
+  options?: RequestInit,
+): Promise<UploadUrlResponse> => {
+  return customFetch<UploadUrlResponse>(getRequestUploadUrlUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(uploadUrlRequest),
+  });
+};
+
+export const getRequestUploadUrlMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestUploadUrl>>,
+    TError,
+    { data: BodyType<UploadUrlRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestUploadUrl>>,
+  TError,
+  { data: BodyType<UploadUrlRequest> },
+  TContext
+> => {
+  const mutationKey = ["requestUploadUrl"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestUploadUrl>>,
+    { data: BodyType<UploadUrlRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return requestUploadUrl(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RequestUploadUrlMutationResult = NonNullable<
+  Awaited<ReturnType<typeof requestUploadUrl>>
+>;
+export type RequestUploadUrlMutationBody = BodyType<UploadUrlRequest>;
+export type RequestUploadUrlMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+export const useRequestUploadUrl = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestUploadUrl>>,
+    TError,
+    { data: BodyType<UploadUrlRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof requestUploadUrl>>,
+  TError,
+  { data: BodyType<UploadUrlRequest> },
+  TContext
+> => {
+  return useMutation(getRequestUploadUrlMutationOptions(options));
+};
+
+/**
+ * @summary Serve an uploaded file
+ */
+export const getGetStorageObjectUrl = (objectPath: string) => {
+  return `/api/storage/objects/${objectPath}`;
+};
+
+export const getStorageObject = async (
+  objectPath: string,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getGetStorageObjectUrl(objectPath), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStorageObjectQueryKey = (objectPath: string) => {
+  return [`/api/storage/objects/${objectPath}`] as const;
+};
+
+export const getGetStorageObjectQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStorageObject>>,
+  TError = ErrorType<unknown>,
+>(
+  objectPath: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStorageObject>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetStorageObjectQueryKey(objectPath);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getStorageObject>>
+  > = ({ signal }) =>
+    getStorageObject(objectPath, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!objectPath,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStorageObject>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStorageObjectQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStorageObject>>
+>;
+export type GetStorageObjectQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Serve an uploaded file
+ */
+
+export function useGetStorageObject<
+  TData = Awaited<ReturnType<typeof getStorageObject>>,
+  TError = ErrorType<unknown>,
+>(
+  objectPath: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStorageObject>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStorageObjectQueryOptions(objectPath, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get files attached to a delivery
+ */
+export const getGetDeliveryFilesUrl = (id: number) => {
+  return `/api/deliveries/${id}/files`;
+};
+
+export const getDeliveryFiles = async (
+  id: number,
+  options?: RequestInit,
+): Promise<DeliveryFileRecord[]> => {
+  return customFetch<DeliveryFileRecord[]>(getGetDeliveryFilesUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDeliveryFilesQueryKey = (id: number) => {
+  return [`/api/deliveries/${id}/files`] as const;
+};
+
+export const getGetDeliveryFilesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDeliveryFiles>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDeliveryFiles>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetDeliveryFilesQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDeliveryFiles>>
+  > = ({ signal }) => getDeliveryFiles(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDeliveryFiles>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDeliveryFilesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDeliveryFiles>>
+>;
+export type GetDeliveryFilesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get files attached to a delivery
+ */
+
+export function useGetDeliveryFiles<
+  TData = Awaited<ReturnType<typeof getDeliveryFiles>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDeliveryFiles>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDeliveryFilesQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Attach an uploaded file to a delivery
+ */
+export const getAttachDeliveryFileUrl = (id: number) => {
+  return `/api/deliveries/${id}/files`;
+};
+
+export const attachDeliveryFile = async (
+  id: number,
+  attachFileRequest: AttachFileRequest,
+  options?: RequestInit,
+): Promise<DeliveryFileRecord> => {
+  return customFetch<DeliveryFileRecord>(getAttachDeliveryFileUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(attachFileRequest),
+  });
+};
+
+export const getAttachDeliveryFileMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof attachDeliveryFile>>,
+    TError,
+    { id: number; data: BodyType<AttachFileRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof attachDeliveryFile>>,
+  TError,
+  { id: number; data: BodyType<AttachFileRequest> },
+  TContext
+> => {
+  const mutationKey = ["attachDeliveryFile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof attachDeliveryFile>>,
+    { id: number; data: BodyType<AttachFileRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return attachDeliveryFile(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AttachDeliveryFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof attachDeliveryFile>>
+>;
+export type AttachDeliveryFileMutationBody = BodyType<AttachFileRequest>;
+export type AttachDeliveryFileMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Attach an uploaded file to a delivery
+ */
+export const useAttachDeliveryFile = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof attachDeliveryFile>>,
+    TError,
+    { id: number; data: BodyType<AttachFileRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof attachDeliveryFile>>,
+  TError,
+  { id: number; data: BodyType<AttachFileRequest> },
+  TContext
+> => {
+  return useMutation(getAttachDeliveryFileMutationOptions(options));
+};
+
+/**
+ * @summary Remove a file from a delivery
+ */
+export const getDeleteDeliveryFileUrl = (id: number, fileId: number) => {
+  return `/api/deliveries/${id}/files/${fileId}`;
+};
+
+export const deleteDeliveryFile = async (
+  id: number,
+  fileId: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteDeliveryFileUrl(id, fileId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteDeliveryFileMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDeliveryFile>>,
+    TError,
+    { id: number; fileId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteDeliveryFile>>,
+  TError,
+  { id: number; fileId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteDeliveryFile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteDeliveryFile>>,
+    { id: number; fileId: number }
+  > = (props) => {
+    const { id, fileId } = props ?? {};
+
+    return deleteDeliveryFile(id, fileId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteDeliveryFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteDeliveryFile>>
+>;
+
+export type DeleteDeliveryFileMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Remove a file from a delivery
+ */
+export const useDeleteDeliveryFile = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteDeliveryFile>>,
+    TError,
+    { id: number; fileId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteDeliveryFile>>,
+  TError,
+  { id: number; fileId: number },
+  TContext
+> => {
+  return useMutation(getDeleteDeliveryFileMutationOptions(options));
+};
 
 /**
  * @summary Get all users (admin only)

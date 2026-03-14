@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./attachFileRequest";
 export * from "./createDeliveryRequest";
 export * from "./delivery";
+export * from "./deliveryFileRecord";
 export * from "./deliveryListResponse";
 export * from "./errorResponse";
 export * from "./getDeliveriesParams";
@@ -19,5 +21,7 @@ export * from "./successResponse";
 export * from "./updateDeliveryRequest";
 export * from "./updatePasswordRequest";
 export * from "./updateSettingsRequest";
+export * from "./uploadUrlRequest";
+export * from "./uploadUrlResponse";
 export * from "./user";
 export * from "./userRole";
