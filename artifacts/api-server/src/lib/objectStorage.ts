@@ -160,9 +160,13 @@ export class ObjectStorageService {
     }
 
     const url = new URL(rawPath);
-    const rawObjectPath = url.pathname;
+    const rawObjectPath = url.pathname; // e.g. "/bucket/objects/uploads/uuid"
 
     let objectEntityDir = this.getPrivateObjectDir();
+    // Ensure leading slash so it matches the URL pathname format
+    if (!objectEntityDir.startsWith("/")) {
+      objectEntityDir = `/${objectEntityDir}`;
+    }
     if (!objectEntityDir.endsWith("/")) {
       objectEntityDir = `${objectEntityDir}/`;
     }

@@ -47,7 +47,8 @@ export function DeliveryFiles({ deliveryId, canDelete = false }: DeliveryFilesPr
     const result = await requestUploadUrlMutation.mutateAsync({
       data: { name: file.name, size: file.size, contentType: file.type },
     });
-    uploadMap.current.set(result.uploadURL, {
+    // Key by Uppy file ID — stable across the upload lifecycle, unlike the URL
+    uploadMap.current.set(file.id, {
       objectPath: result.objectPath,
       fileName: file.name,
       fileType: file.type,
@@ -62,10 +63,12 @@ export function DeliveryFiles({ deliveryId, canDelete = false }: DeliveryFilesPr
 
   const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
     for (const f of result.successful ?? []) {
-      const uploadURL = (f.response as { uploadURL?: string } | undefined)?.uploadURL;
-      if (!uploadURL) continue;
-      const meta = uploadMap.current.get(uploadURL);
-      if (!meta) continue;
+      // Look up metadata by Uppy file ID (set during getUploadParameters)
+      const meta = uploadMap.current.get(f.id);
+      if (!meta) {
+        console.warn("No upload metadata found for file", f.id, f.name);
+        continue;
+      }
 
       try {
         await attachFileMutation.mutateAsync({
@@ -77,7 +80,7 @@ export function DeliveryFiles({ deliveryId, canDelete = false }: DeliveryFilesPr
             objectPath: meta.objectPath,
           },
         });
-        uploadMap.current.delete(uploadURL);
+        uploadMap.current.delete(f.id);
         queryClient.invalidateQueries({ queryKey: getGetDeliveryFilesQueryKey(deliveryId) });
       } catch (e) {
         console.error("Failed to attach file", e);
@@ -140,16 +143,18 @@ export function DeliveryFiles({ deliveryId, canDelete = false }: DeliveryFilesPr
 
       {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
 
-      <ObjectUploader
-        maxNumberOfFiles={5}
-        maxFileSize={20 * 1024 * 1024}
-        onGetUploadParameters={handleGetUploadParameters}
-        onComplete={handleUploadComplete}
-        buttonClassName="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md border border-border bg-white hover:bg-slate-50 transition-colors"
-      >
-        <Upload className="w-3.5 h-3.5" />
-        Attach Files
-      </ObjectUploader>
+      {canDelete && (
+        <ObjectUploader
+          maxNumberOfFiles={5}
+          maxFileSize={20 * 1024 * 1024}
+          onGetUploadParameters={handleGetUploadParameters}
+          onComplete={handleUploadComplete}
+          buttonClassName="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md border border-border bg-white hover:bg-slate-50 transition-colors"
+        >
+          <Upload className="w-3.5 h-3.5" />
+          Attach Files
+        </ObjectUploader>
+      )}
     </div>
   );
 }
