@@ -123,8 +123,34 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       .offset(offset),
   ]);
 
+  // Fetch files for all returned deliveries in one query
+  const deliveryIds = rows.map((r) => r.id);
+  const filesRows = deliveryIds.length
+    ? await db
+        .select({
+          deliveryId: deliveryFilesTable.deliveryId,
+          id: deliveryFilesTable.id,
+          fileName: deliveryFilesTable.fileName,
+          fileType: deliveryFilesTable.fileType,
+          objectPath: deliveryFilesTable.objectPath,
+        })
+        .from(deliveryFilesTable)
+        .where(sql`${deliveryFilesTable.deliveryId} = ANY(${sql.raw(`ARRAY[${deliveryIds.join(",")}]::int[]`)})`)
+    : [];
+
+  const filesByDelivery = new Map<number, typeof filesRows>();
+  for (const f of filesRows) {
+    const list = filesByDelivery.get(f.deliveryId) ?? [];
+    list.push(f);
+    filesByDelivery.set(f.deliveryId, list);
+  }
+
   res.json({
-    data: rows.map((r) => ({ ...r, createdByName: r.createdByName ?? "" })),
+    data: rows.map((r) => ({
+      ...r,
+      createdByName: r.createdByName ?? "",
+      files: filesByDelivery.get(r.id) ?? [],
+    })),
     total: totalResult[0]?.count ?? 0,
     page: pageNum,
     limit: limitNum,

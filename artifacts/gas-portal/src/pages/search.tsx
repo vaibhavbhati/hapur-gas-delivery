@@ -4,8 +4,27 @@ import { useDebounce } from "use-debounce";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatDate, isEligible } from "@/lib/utils";
-import { Search as SearchIcon, CheckCircle2, XCircle, ChevronDown, ChevronRight, History } from "lucide-react";
-import { DeliveryFilesToggle } from "@/components/DeliveryFiles";
+import {
+  Search as SearchIcon,
+  CheckCircle2,
+  XCircle,
+  ChevronDown,
+  ChevronRight,
+  History,
+  FileImage,
+  FileText,
+  File as FileIcon,
+} from "lucide-react";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+interface DeliveryFileInfo {
+  id: number;
+  deliveryId: number;
+  fileName: string;
+  fileType: string;
+  objectPath: string;
+}
 
 interface DeliveryRecord {
   id: number;
@@ -16,6 +35,7 @@ interface DeliveryRecord {
   nextEligibleDate: string;
   createdByName?: string;
   createdAt?: string;
+  files?: DeliveryFileInfo[];
 }
 
 interface ConsumerGroup {
@@ -47,6 +67,51 @@ function groupByConsumer(deliveries: DeliveryRecord[]): ConsumerGroup[] {
   });
 }
 
+function getDownloadUrl(objectPath: string) {
+  const stripped = objectPath.startsWith("/objects/")
+    ? objectPath.replace("/objects", "")
+    : "/" + objectPath.replace(/^\//, "");
+  return `${BASE}/api/storage/objects${stripped}`;
+}
+
+function FileIconLink({ file }: { file: DeliveryFileInfo }) {
+  let Icon = FileIcon;
+  let colorClass = "text-muted-foreground";
+  if (file.fileType.startsWith("image/")) {
+    Icon = FileImage;
+    colorClass = "text-blue-500";
+  } else if (file.fileType === "application/pdf") {
+    Icon = FileText;
+    colorClass = "text-red-500";
+  } else if (file.fileType.includes("word") || file.fileType.includes("document")) {
+    Icon = FileText;
+    colorClass = "text-blue-700";
+  }
+
+  return (
+    <a
+      href={getDownloadUrl(file.objectPath)}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={file.fileName}
+      className={`${colorClass} hover:opacity-70 transition-opacity`}
+    >
+      <Icon className="w-4 h-4" />
+    </a>
+  );
+}
+
+function InlineFiles({ files }: { files?: DeliveryFileInfo[] }) {
+  if (!files || files.length === 0) return null;
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {files.map((f) => (
+        <FileIconLink key={f.id} file={f} />
+      ))}
+    </div>
+  );
+}
+
 function ConsumerRow({ group }: { group: ConsumerGroup }) {
   const [expanded, setExpanded] = React.useState(false);
   const eligible = isEligible(group.latest.nextEligibleDate);
@@ -76,7 +141,7 @@ function ConsumerRow({ group }: { group: ConsumerGroup }) {
           )}
         </td>
         <td className="px-6 py-4">
-          <DeliveryFilesToggle deliveryId={group.latest.id} canDelete={false} />
+          <InlineFiles files={group.latest.files} />
         </td>
         <td className="px-6 py-4 text-right">
           {hasMultiple ? (
@@ -107,7 +172,7 @@ function ConsumerRow({ group }: { group: ConsumerGroup }) {
                   return (
                     <div
                       key={d.id}
-                      className="flex flex-wrap items-start gap-4 bg-white rounded-md border border-border px-4 py-3 text-sm"
+                      className="flex flex-wrap items-center gap-4 bg-white rounded-md border border-border px-4 py-3 text-sm"
                     >
                       <div className="flex flex-col min-w-[120px]">
                         <span className="text-xs text-muted-foreground">Delivery Date</span>
@@ -136,11 +201,14 @@ function ConsumerRow({ group }: { group: ConsumerGroup }) {
                           <span>{d.createdByName}</span>
                         </div>
                       )}
-                      <div className="ml-auto">
-                        <DeliveryFilesToggle deliveryId={d.id} canDelete={false} />
-                      </div>
+                      {d.files && d.files.length > 0 && (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-muted-foreground">Files</span>
+                          <InlineFiles files={d.files} />
+                        </div>
+                      )}
                       {i === 0 && (
-                        <span className="self-center text-xs bg-primary/10 text-primary font-semibold px-2 py-0.5 rounded-full">
+                        <span className="ml-auto self-center text-xs bg-primary/10 text-primary font-semibold px-2 py-0.5 rounded-full">
                           Latest
                         </span>
                       )}
