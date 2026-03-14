@@ -2,7 +2,8 @@ import * as React from "react";
 import { 
   useGetDeliveries, 
   useDeleteDelivery, 
-  useExportDeliveries, 
+  useExportDeliveries,
+  useExportFullDatabase,
   getGetDeliveriesQueryKey 
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,6 +35,10 @@ export default function AdminPage() {
     query: { enabled: false } 
   });
 
+  const { refetch: fetchFullExport, isFetching: isFullExporting } = useExportFullDatabase({
+    query: { enabled: false }
+  });
+
   const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this record? This action cannot be undone.")) {
       await deleteMutation.mutateAsync({ id });
@@ -59,6 +64,25 @@ export default function AdminPage() {
     }
   };
 
+  const handleFullExport = async () => {
+    try {
+      const result = await fetchFullExport();
+      if (result.data) {
+        const url = window.URL.createObjectURL(result.data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `gas-portal-full-export-${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      }
+    } catch (e) {
+      console.error("Full export failed", e);
+      alert("Failed to export full database.");
+    }
+  };
+
   return (
     <div className="space-y-8 flex flex-col h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -66,14 +90,25 @@ export default function AdminPage() {
           <h1 className="text-3xl font-display font-bold">Admin Panel</h1>
           <p className="text-muted-foreground mt-1">Manage all delivery records and export data.</p>
         </div>
-        <Button 
-          onClick={handleExport} 
-          disabled={isExporting}
-          className="gap-2"
-        >
-          {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          Export to Excel
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleExport} 
+            disabled={isExporting}
+            variant="outline"
+            className="gap-2"
+          >
+            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Export Deliveries
+          </Button>
+          <Button 
+            onClick={handleFullExport} 
+            disabled={isFullExporting}
+            className="gap-2"
+          >
+            {isFullExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Full DB Export
+          </Button>
+        </div>
       </div>
 
       <Card className="flex-1 overflow-hidden flex flex-col">

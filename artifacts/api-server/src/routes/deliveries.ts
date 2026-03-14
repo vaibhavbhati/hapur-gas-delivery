@@ -24,6 +24,144 @@ function addDays(dateStr: string, days: number): string {
   return d.toISOString().split("T")[0];
 }
 
+async function isAdmin(userId: number): Promise<boolean> {
+  const [user] = await db.select({ role: usersTable.role }).from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  return user?.role === "admin";
+}
+
+function styleHeader(row: ExcelJS.Row, color: string) {
+  row.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
+}
+
+router.get("/export/full", requireAuth, async (req: Request, res: Response) => {
+  if (!req.session.userId || !(await isAdmin(req.session.userId))) {
+    return res.status(403).json({ error: "forbidden", message: "Admin only" });
+  }
+
+  const [deliveries, users, files, settings] = await Promise.all([
+    db.select({
+      id: deliveriesTable.id,
+      consumerNumber: deliveriesTable.consumerNumber,
+      customerName: deliveriesTable.customerName,
+      mobileNumber: deliveriesTable.mobileNumber,
+      deliveryDate: deliveriesTable.deliveryDate,
+      nextEligibleDate: deliveriesTable.nextEligibleDate,
+      createdAt: deliveriesTable.createdAt,
+      createdByName: usersTable.name,
+    }).from(deliveriesTable)
+      .leftJoin(usersTable, eq(deliveriesTable.createdBy, usersTable.id))
+      .orderBy(desc(deliveriesTable.deliveryDate)),
+
+    db.select({
+      id: usersTable.id,
+      username: usersTable.username,
+      name: usersTable.name,
+      role: usersTable.role,
+      deliveryLocked: usersTable.deliveryLocked,
+      createdAt: usersTable.createdAt,
+    }).from(usersTable).orderBy(usersTable.id),
+
+    db.select().from(deliveryFilesTable).orderBy(desc(deliveryFilesTable.createdAt)),
+
+    db.select().from(settingsTable).limit(1),
+  ]);
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Gas Delivery Portal";
+  workbook.created = new Date();
+
+  const deliverySheet = workbook.addWorksheet("Deliveries");
+  deliverySheet.columns = [
+    { header: "ID", key: "id", width: 8 },
+    { header: "Consumer Number", key: "consumerNumber", width: 20 },
+    { header: "Customer Name", key: "customerName", width: 25 },
+    { header: "Mobile Number", key: "mobileNumber", width: 18 },
+    { header: "Delivery Date", key: "deliveryDate", width: 18 },
+    { header: "Next Eligible Date", key: "nextEligibleDate", width: 20 },
+    { header: "Added By", key: "createdByName", width: 20 },
+    { header: "Added On", key: "createdAt", width: 22 },
+  ];
+  styleHeader(deliverySheet.getRow(1), "FF1E40AF");
+  for (const d of deliveries) {
+    deliverySheet.addRow({
+      id: d.id,
+      consumerNumber: d.consumerNumber,
+      customerName: d.customerName,
+      mobileNumber: d.mobileNumber,
+      deliveryDate: d.deliveryDate,
+      nextEligibleDate: d.nextEligibleDate,
+      createdByName: d.createdByName ?? "",
+      createdAt: d.createdAt ? new Date(d.createdAt).toLocaleString() : "",
+    });
+  }
+
+  const userSheet = workbook.addWorksheet("Users");
+  userSheet.columns = [
+    { header: "ID", key: "id", width: 8 },
+    { header: "Username", key: "username", width: 20 },
+    { header: "Full Name", key: "name", width: 25 },
+    { header: "Role", key: "role", width: 12 },
+    { header: "Delivery Locked", key: "deliveryLocked", width: 18 },
+    { header: "Created At", key: "createdAt", width: 22 },
+  ];
+  styleHeader(userSheet.getRow(1), "FF065F46");
+  for (const u of users) {
+    userSheet.addRow({
+      id: u.id,
+      username: u.username,
+      name: u.name,
+      role: u.role,
+      deliveryLocked: u.deliveryLocked ? "Yes" : "No",
+      createdAt: u.createdAt ? new Date(u.createdAt).toLocaleString() : "",
+    });
+  }
+
+  const filesSheet = workbook.addWorksheet("Delivery Files");
+  filesSheet.columns = [
+    { header: "ID", key: "id", width: 8 },
+    { header: "Delivery ID", key: "deliveryId", width: 12 },
+    { header: "File Name", key: "fileName", width: 35 },
+    { header: "File Type", key: "fileType", width: 15 },
+    { header: "File Size (bytes)", key: "fileSize", width: 18 },
+    { header: "Uploaded By (ID)", key: "uploadedBy", width: 18 },
+    { header: "Uploaded At", key: "createdAt", width: 22 },
+  ];
+  styleHeader(filesSheet.getRow(1), "FF7C3AED");
+  for (const f of files) {
+    filesSheet.addRow({
+      id: f.id,
+      deliveryId: f.deliveryId,
+      fileName: f.fileName,
+      fileType: f.fileType,
+      fileSize: f.fileSize,
+      uploadedBy: f.uploadedBy,
+      createdAt: f.createdAt ? new Date(f.createdAt).toLocaleString() : "",
+    });
+  }
+
+  const settingsSheet = workbook.addWorksheet("Settings");
+  settingsSheet.columns = [
+    { header: "ID", key: "id", width: 8 },
+    { header: "Waiting Days", key: "waitingDays", width: 18 },
+    { header: "Updated At", key: "updatedAt", width: 22 },
+  ];
+  styleHeader(settingsSheet.getRow(1), "FFB45309");
+  for (const s of settings) {
+    settingsSheet.addRow({
+      id: s.id,
+      waitingDays: s.waitingDays,
+      updatedAt: s.updatedAt ? new Date(s.updatedAt).toLocaleString() : "",
+    });
+  }
+
+  const date = new Date().toISOString().split("T")[0];
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", `attachment; filename="gas-portal-full-export-${date}.xlsx"`);
+  await workbook.xlsx.write(res);
+  return res.end();
+});
+
 router.get("/export/excel", requireAuth, async (req: Request, res: Response) => {
   const deliveries = await db
     .select({

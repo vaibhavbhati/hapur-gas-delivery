@@ -866,6 +866,72 @@ export function useExportDeliveries<
 }
 
 /**
+ * @summary Export all database tables as Excel (admin only)
+ */
+export const getExportFullDatabaseUrl = () => {
+  return `/api/deliveries/export/full`;
+};
+
+export const exportFullDatabase = async (
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getExportFullDatabaseUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportFullDatabaseQueryKey = () => {
+  return [`/api/deliveries/export/full`] as const;
+};
+
+export const getExportFullDatabaseQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportFullDatabase>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportFullDatabase>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getExportFullDatabaseQueryKey();
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportFullDatabase>>
+  > = ({ signal }) => exportFullDatabase({ signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportFullDatabase>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportFullDatabaseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportFullDatabase>>
+>;
+export type ExportFullDatabaseQueryError = ErrorType<unknown>;
+
+export function useExportFullDatabase<
+  TData = Awaited<ReturnType<typeof exportFullDatabase>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof exportFullDatabase>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportFullDatabaseQueryOptions(options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Request a presigned URL for file upload
  */
 export const getRequestUploadUrlUrl = () => {
