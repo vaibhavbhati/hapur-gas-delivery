@@ -1,15 +1,20 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Gas Delivery Management Portal API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: deliveries
+    description: Gas delivery records
+  - name: settings
+    description: Portal settings
 paths:
   /healthz:
     get:
@@ -24,6 +29,225 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /deliveries:
+    get:
+      operationId: getDeliveries
+      tags: [deliveries]
+      summary: Get all delivery records
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by consumer number, name, or mobile
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of delivery records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryListResponse"
+    post:
+      operationId: createDelivery
+      tags: [deliveries]
+      summary: Create a delivery record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDeliveryRequest"
+      responses:
+        "201":
+          description: Delivery record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /deliveries/{id}:
+    get:
+      operationId: getDelivery
+      tags: [deliveries]
+      summary: Get a delivery record by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Delivery record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateDelivery
+      tags: [deliveries]
+      summary: Update a delivery record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDeliveryRequest"
+      responses:
+        "200":
+          description: Updated delivery record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+    delete:
+      operationId: deleteDelivery
+      tags: [deliveries]
+      summary: Delete a delivery record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /deliveries/export/excel:
+    get:
+      operationId: exportDeliveries
+      tags: [deliveries]
+      summary: Export all deliveries as Excel
+      responses:
+        "200":
+          description: Excel file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get portal settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update portal settings (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsRequest"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +258,167 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        message:
+          type: string
+      required:
+        - user
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        role:
+          type: string
+          enum: [admin, user]
+        name:
+          type: string
+      required:
+        - id
+        - username
+        - role
+        - name
+
+    Delivery:
+      type: object
+      properties:
+        id:
+          type: integer
+        consumerNumber:
+          type: string
+        customerName:
+          type: string
+        mobileNumber:
+          type: string
+        deliveryDate:
+          type: string
+          format: date
+        nextEligibleDate:
+          type: string
+          format: date
+        createdBy:
+          type: integer
+        createdByName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - consumerNumber
+        - customerName
+        - mobileNumber
+        - deliveryDate
+        - nextEligibleDate
+        - createdBy
+        - createdAt
+        - updatedAt
+
+    CreateDeliveryRequest:
+      type: object
+      properties:
+        consumerNumber:
+          type: string
+        customerName:
+          type: string
+        deliveryDate:
+          type: string
+          format: date
+      required:
+        - consumerNumber
+        - customerName
+        - deliveryDate
+
+    UpdateDeliveryRequest:
+      type: object
+      properties:
+        consumerNumber:
+          type: string
+        customerName:
+          type: string
+        mobileNumber:
+          type: string
+        deliveryDate:
+          type: string
+          format: date
+
+    DeliveryListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Delivery"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - data
+        - total
+        - page
+        - limit
+
+    Settings:
+      type: object
+      properties:
+        waitingDays:
+          type: integer
+          description: Number of days a customer must wait before next gas delivery
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - waitingDays
+
+    UpdateSettingsRequest:
+      type: object
+      properties:
+        waitingDays:
+          type: integer
+          minimum: 1
+      required:
+        - waitingDays

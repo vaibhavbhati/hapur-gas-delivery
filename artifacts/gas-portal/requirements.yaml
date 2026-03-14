@@ -1,0 +1,23 @@
+packages:
+  "framer-motion": "For smooth page transitions and beautiful entrance animations"
+  "@hookform/resolvers": "Zod validation integration for react-hook-form"
+  "react-hook-form": "For performant, flexible, and extensible forms"
+  "zod": "Schema validation for forms"
+  "date-fns": "To format delivery and eligibility dates elegantly"
+  "clsx": "Utility for conditionally joining classNames"
+  "tailwind-merge": "Utility to resolve Tailwind CSS class conflicts"
+  "lucide-react": "Beautiful, consistent icons for the dashboard UI"
+  "use-debounce": "For debouncing consumer number search to avoid API spam"
+
+images:
+  - path: "artifacts/gas-portal/public/images/login-bg.png"
+    description: "Abstract flowing 3D gradient waves in deep indigo, teal, and slate. Clean, modern, professional enterprise software feel. Minimalist and premium."
+    aspect_ratio: "16:9"
+  - path: "artifacts/gas-portal/public/images/logo-mark.png"
+    description: "Minimalist geometric flame or drop logo in vibrant indigo and cyan. Transparent background. Clean and modern."
+    aspect_ratio: "1:1"
+
+notes:
+  - Assuming custom API hook imports from @workspace/api-client-react work directly in this monorepo context.
+  - The API schema misses mobileNumber on CreateDeliveryRequest, but the UI requirements specify passing it for new consumers. Adding a ts-expect-error override to pass it anyway so the feature is visually functional.
+  - Export deliveries expects to download the Blob response to the user's browser.

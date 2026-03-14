@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Gas Delivery Portal"
+version = "1.0.0"
+id = "artifacts/gas-portal"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 25904
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/gas-portal run dev"
+
+[services.env]
+PORT = "25904"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/gas-portal", "run", "build"]
+publicDir = "artifacts/gas-portal/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
