@@ -33,7 +33,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = z.object({
   consumerNumber: z.string().min(1, "Consumer Number is required"),
-  customerName: z.string().min(1, "Customer Name is required"),
+  customerName: z.string().optional().default(""),
   deliveryDate: z.string().min(1, "Date of Delivery is required"),
   mobileNumber: z
     .string()
@@ -286,7 +286,7 @@ export default function AddDeliveryPage() {
       <Card>
         <CardHeader>
           <CardTitle>Delivery Details</CardTitle>
-          <CardDescription>All fields are required.</CardDescription>
+          <CardDescription>Fields marked <span className="text-destructive font-medium">*</span> are required.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -339,12 +339,10 @@ export default function AddDeliveryPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">
-                  Customer Name <span className="text-destructive">*</span>
+                  Customer Name
+                  <span className="text-muted-foreground font-normal text-xs ml-1">(optional)</span>
                 </label>
                 <Input {...form.register("customerName")} placeholder="Full Name" />
-                {form.formState.errors.customerName && (
-                  <p className="text-destructive text-sm">{form.formState.errors.customerName.message}</p>
-                )}
               </div>
 
               <div className="space-y-2">

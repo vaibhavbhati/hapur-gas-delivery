@@ -26,7 +26,7 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS deliveries (
       id SERIAL PRIMARY KEY,
       consumer_number TEXT NOT NULL,
-      customer_name TEXT NOT NULL,
+      customer_name TEXT NOT NULL DEFAULT '',
       mobile_number TEXT NOT NULL DEFAULT '',
       delivery_date DATE NOT NULL,
       next_eligible_date DATE NOT NULL,

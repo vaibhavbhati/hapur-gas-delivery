@@ -307,10 +307,10 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
     return res.status(403).json({ error: "locked", message: "Your account is restricted from adding deliveries. Please contact the administrator." });
   }
 
-  const { consumerNumber, customerName, deliveryDate } = req.body;
+  const { consumerNumber, customerName = "", deliveryDate } = req.body;
 
-  if (!consumerNumber || !customerName || !deliveryDate) {
-    return res.status(400).json({ error: "bad_request", message: "consumerNumber, customerName and deliveryDate are required" });
+  if (!consumerNumber || !deliveryDate) {
+    return res.status(400).json({ error: "bad_request", message: "consumerNumber and deliveryDate are required" });
   }
 
   const waitingDays = await getWaitingDays();
