@@ -87,6 +87,11 @@ export interface UpdateSettingsRequest {
   waitingDays: number;
 }
 
+export interface UpdatePasswordRequest {
+  /** @minLength 4 */
+  password: string;
+}
+
 export type GetDeliveriesParams = {
   /**
    * Search by consumer number, name, or mobile

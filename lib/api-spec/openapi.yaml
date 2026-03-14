@@ -218,6 +218,52 @@ paths:
                 type: string
                 format: binary
 
+  /users:
+    get:
+      operationId: getUsers
+      tags: [auth]
+      summary: Get all users (admin only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{id}/password:
+    put:
+      operationId: updateUserPassword
+      tags: [auth]
+      summary: Update a user's password (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePasswordRequest"
+      responses:
+        "200":
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /settings:
     get:
       operationId: getSettings
@@ -422,3 +468,12 @@ components:
           minimum: 1
       required:
         - waitingDays
+
+    UpdatePasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 4
+      required:
+        - password

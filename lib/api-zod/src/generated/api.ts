@@ -155,6 +155,35 @@ export const DeleteDeliveryResponse = zod.object({
 });
 
 /**
+ * @summary Get all users (admin only)
+ */
+export const GetUsersResponseItem = zod.object({
+  id: zod.number(),
+  username: zod.string(),
+  role: zod.enum(["admin", "user"]),
+  name: zod.string(),
+});
+export const GetUsersResponse = zod.array(GetUsersResponseItem);
+
+/**
+ * @summary Update a user's password (admin only)
+ */
+export const UpdateUserPasswordParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const updateUserPasswordBodyPasswordMin = 4;
+
+export const UpdateUserPasswordBody = zod.object({
+  password: zod.string().min(updateUserPasswordBodyPasswordMin),
+});
+
+export const UpdateUserPasswordResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
  * @summary Get portal settings
  */
 export const GetSettingsResponse = zod.object({

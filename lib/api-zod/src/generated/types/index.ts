@@ -17,6 +17,7 @@ export * from "./loginResponse";
 export * from "./settings";
 export * from "./successResponse";
 export * from "./updateDeliveryRequest";
+export * from "./updatePasswordRequest";
 export * from "./updateSettingsRequest";
 export * from "./user";
 export * from "./userRole";
