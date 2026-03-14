@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDate } from "@/lib/utils";
-import { CheckCircle2, UserCheck, UserPlus, Paperclip } from "lucide-react";
+import { CheckCircle2, UserCheck, UserPlus, Paperclip, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DeliveryFiles } from "@/components/DeliveryFiles";
+import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = z.object({
   consumerNumber: z.string().min(1, "Consumer Number is required"),
@@ -23,6 +24,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function AddDeliveryPage() {
+  const { isDeliveryLocked } = useAuth();
   const queryClient = useQueryClient();
   const [successData, setSuccessData] = React.useState<any>(null);
   const [isExisting, setIsExisting] = React.useState(false);
@@ -94,6 +96,22 @@ export default function AddDeliveryPage() {
       console.error("Failed to create", e);
     }
   };
+
+  if (isDeliveryLocked) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="flex flex-col items-center justify-center py-24 text-center space-y-5">
+          <div className="bg-destructive/10 rounded-full p-6">
+            <Lock className="w-12 h-12 text-destructive" />
+          </div>
+          <h2 className="text-2xl font-display font-bold text-foreground">Access Restricted</h2>
+          <p className="text-muted-foreground max-w-sm">
+            Your account has been restricted from adding deliveries. Please contact the administrator to regain access.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">

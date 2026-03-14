@@ -2,13 +2,15 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey, useGetUsers, useUpdateUserPassword } from "@workspace/api-client-react";
+import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey, useGetUsers, useUpdateUserPassword, getGetUsersQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings as SettingsIcon, CheckCircle2, Users, Eye, EyeOff, KeyRound } from "lucide-react";
+import { Settings as SettingsIcon, CheckCircle2, Users, Eye, EyeOff, KeyRound, Lock, LockOpen, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const settingsSchema = z.object({
   waitingDays: z.coerce.number().min(1, "Must be at least 1 day").max(365, "Must be less than a year"),
@@ -20,10 +22,12 @@ const passwordSchema = z.object({
 });
 type PasswordForm = z.infer<typeof passwordSchema>;
 
-function UserPasswordRow({ user }: { user: { id: number; username: string; name: string; role: string } }) {
+function UserPasswordRow({ user }: { user: { id: number; username: string; name: string; role: string; deliveryLocked: boolean } }) {
+  const queryClient = useQueryClient();
   const [showInput, setShowInput] = React.useState(false);
   const [showPw, setShowPw] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
+  const [lockPending, setLockPending] = React.useState(false);
 
   const form = useForm<PasswordForm>({ resolver: zodResolver(passwordSchema) });
   const updatePwMutation = useUpdateUserPassword({
@@ -41,15 +45,38 @@ function UserPasswordRow({ user }: { user: { id: number; username: string; name:
     await updatePwMutation.mutateAsync({ id: user.id, data });
   };
 
+  const toggleLock = async () => {
+    setLockPending(true);
+    try {
+      await fetch(`${BASE}/api/users/${user.id}/delivery-lock`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locked: !user.deliveryLocked }),
+      });
+      queryClient.invalidateQueries({ queryKey: getGetUsersQueryKey() });
+    } finally {
+      setLockPending(false);
+    }
+  };
+
+  const isAdmin = user.role === "admin";
+
   return (
     <div className="flex flex-col gap-2 py-4 border-b border-border last:border-0">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${user.deliveryLocked ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <p className="font-semibold text-sm">{user.name}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-sm">{user.name}</p>
+              {user.deliveryLocked && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">
+                  <Lock className="w-2.5 h-2.5" /> Locked
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">@{user.username} · <span className="capitalize">{user.role}</span></p>
           </div>
         </div>
@@ -58,6 +85,23 @@ function UserPasswordRow({ user }: { user: { id: number; username: string; name:
             <span className="text-xs text-green-600 font-medium flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> Updated
             </span>
+          )}
+          {!isAdmin && (
+            <Button
+              variant={user.deliveryLocked ? "destructive" : "outline"}
+              size="sm"
+              onClick={toggleLock}
+              disabled={lockPending}
+              title={user.deliveryLocked ? "Unlock: allow adding deliveries" : "Lock: prevent adding deliveries"}
+            >
+              {lockPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : user.deliveryLocked ? (
+                <><LockOpen className="w-3.5 h-3.5 mr-1.5" />Unlock</>
+              ) : (
+                <><Lock className="w-3.5 h-3.5 mr-1.5" />Lock</>
+              )}
+            </Button>
           )}
           <Button
             variant="outline"
@@ -222,7 +266,7 @@ export default function SettingsPage() {
             <div className="py-4 text-muted-foreground text-sm">Loading users...</div>
           ) : (
             <div>
-              {(users ?? []).map((user) => (
+              {((users ?? []) as Array<{ id: number; username: string; name: string; role: string; deliveryLocked: boolean }>).map((user) => (
                 <UserPasswordRow key={user.id} user={user} />
               ))}
             </div>

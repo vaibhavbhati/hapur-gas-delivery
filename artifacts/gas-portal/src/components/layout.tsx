@@ -7,7 +7,8 @@ import {
   Settings, 
   LogOut, 
   Droplet,
-  Users
+  Users,
+  Lock
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -15,15 +16,15 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isDeliveryLocked } = useAuth();
 
   const navItems = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/add", label: "Add Delivery", icon: PlusCircle },
-    { href: "/search", label: "Search", icon: Search },
+    { href: "/", label: "Dashboard", icon: LayoutDashboard, locked: false },
+    { href: "/add", label: "Add Delivery", icon: PlusCircle, locked: isDeliveryLocked },
+    { href: "/search", label: "Search", icon: Search, locked: false },
     ...(isAdmin ? [
-      { href: "/admin", label: "Admin Panel", icon: Users },
-      { href: "/settings", label: "Settings", icon: Settings },
+      { href: "/admin", label: "Admin Panel", icon: Users, locked: false },
+      { href: "/settings", label: "Settings", icon: Settings, locked: false },
     ] : [])
   ];
 
@@ -52,7 +53,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   "flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 relative overflow-hidden group",
                   isActive 
                     ? "text-white bg-white/10" 
-                    : "text-sidebar-foreground/70 hover:text-white hover:bg-white/5"
+                    : "text-sidebar-foreground/70 hover:text-white hover:bg-white/5",
+                  item.locked && "opacity-60"
                 )}
               >
                 {isActive && (
@@ -64,7 +66,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   />
                 )}
                 <item.icon className={cn("w-5 h-5 relative z-10", isActive && "text-primary")} />
-                <span className="relative z-10">{item.label}</span>
+                <span className="relative z-10 flex-1">{item.label}</span>
+                {item.locked && (
+                  <Lock className="w-3.5 h-3.5 relative z-10 text-rose-400" />
+                )}
               </Link>
             );
           })}

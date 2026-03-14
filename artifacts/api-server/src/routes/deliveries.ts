@@ -132,6 +132,17 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
 });
 
 router.post("/", requireAuth, async (req: Request, res: Response) => {
+  // Check if this user is locked from adding deliveries
+  const [actingUser] = await db
+    .select({ deliveryLocked: usersTable.deliveryLocked })
+    .from(usersTable)
+    .where(eq(usersTable.id, req.session.userId!))
+    .limit(1);
+
+  if (actingUser?.deliveryLocked) {
+    return res.status(403).json({ error: "locked", message: "Your account is restricted from adding deliveries. Please contact the administrator." });
+  }
+
   const { consumerNumber, customerName, deliveryDate } = req.body;
 
   if (!consumerNumber || !customerName || !deliveryDate) {

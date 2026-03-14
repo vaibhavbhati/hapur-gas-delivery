@@ -45,6 +45,7 @@ export function useAuth() {
     logout: logoutMutation.mutateAsync,
     isLoggingOut: logoutMutation.isPending,
     isAuthenticated: !!user,
-    isAdmin: user?.role === "admin"
+    isAdmin: user?.role === "admin",
+    isDeliveryLocked: user?.deliveryLocked === true,
   };
 }

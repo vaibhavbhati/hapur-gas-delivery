@@ -51,7 +51,7 @@ router.get("/me", async (req: Request, res: Response) => {
     return res.status(401).json({ error: "unauthorized", message: "User not found" });
   }
 
-  return res.json({ id: user.id, username: user.username, role: user.role, name: user.name });
+  return res.json({ id: user.id, username: user.username, role: user.role, name: user.name, deliveryLocked: user.deliveryLocked });
 });
 
 export default router;
@@ -63,7 +63,7 @@ usersRouter.get("/", async (req: Request, res: Response) => {
     return res.status(403).json({ error: "forbidden", message: "Admins only" });
   }
   const users = await db
-    .select({ id: usersTable.id, username: usersTable.username, name: usersTable.name, role: usersTable.role })
+    .select({ id: usersTable.id, username: usersTable.username, name: usersTable.name, role: usersTable.role, deliveryLocked: usersTable.deliveryLocked })
     .from(usersTable);
   return res.json(users);
 });
@@ -82,4 +82,23 @@ usersRouter.put("/:id/password", async (req: Request, res: Response) => {
 
   await db.update(usersTable).set({ password }).where(eq(usersTable.id, id));
   return res.json({ success: true, message: "Password updated" });
+});
+
+usersRouter.put("/:id/delivery-lock", async (req: Request, res: Response) => {
+  if (!req.session.userId || !(await isAdmin(req.session.userId))) {
+    return res.status(403).json({ error: "forbidden", message: "Admins only" });
+  }
+  const id = parseInt(req.params.id);
+  const { locked } = req.body;
+  if (typeof locked !== "boolean") {
+    return res.status(400).json({ error: "bad_request", message: "'locked' must be a boolean" });
+  }
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  if (!user) return res.status(404).json({ error: "not_found", message: "User not found" });
+  if (user.role === "admin") {
+    return res.status(400).json({ error: "bad_request", message: "Cannot lock an admin account" });
+  }
+
+  await db.update(usersTable).set({ deliveryLocked: locked }).where(eq(usersTable.id, id));
+  return res.json({ success: true, deliveryLocked: locked });
 });
